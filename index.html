@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Agregamos un scroll vertical a la ventana de chat */
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        /* Mejoramos la disposición del formulario */
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        .distance-display,
+        .horarios-display {
+            font-weight: bold;
+            color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="hero-image"></div>
+        <div class="hero-overlay"></div>
+        
+        <nav class="navbar">
+            <div class="logo">Viajes.cl</div>
+            <div class="nav-buttons">
+                <button class="nav-btn">Administrar Ticket</button>
+                <div class="language-selector">
+                    <button class="lang-btn active">ES</button>
+                    <button class="lang-btn">EN</button>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="interfaz-principal">
+            <div class="search-container">
+                <div class="transport-icons">
+                    <div class="transport-icon" data-transport="bus" onclick="generateOptions('bus')">🚌</div>
+                    <div class="transport-icon" data-transport="tren" onclick="generateOptions('tren')">🚆</div>
+                    <div class="transport-icon" data-transport="metro" onclick="generateOptions('metro')">🚇</div>
+                    <div class="transport-icon" data-transport="ticket" onclick="generateOptions('ticket')">🎟️</div>
+                    <div class="transport-icon" data-transport="van" onclick="generateOptions('van')">🚐</div>
+                    <div class="transport-icon" data-transport="auto" onclick="generateOptions('auto')">🚗</div>
+                </div>
+                
+                <!-- Formulario de Reserva -->
+                <form id="reservaForm" action="ReservasServlet" method="POST" onsubmit="return obtenerInformacion();">
+                    <div class="input-group">
+                        <input type="text" id="origenInput" name="origen" placeholder="Ciudad de origen" autocomplete="off" required>
+                        <div id="origenSuggestions" class="suggestions"></div>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="destinoInput" name="destino" placeholder="Ciudad de destino" autocomplete="off" required>
+                        <div id="destinoSuggestions" class="suggestions"></div>
+                    </div>
+
+                    <div id="distanceDisplay" class="distance-display"></div>
+                    <input type="hidden" id="distanciaInput" name="distancia" value="0">
+
+                    <div class="input-group">
+                        <input type="date" name="fechaSalida" required>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="date" name="fechaRegreso" required>
+                    </div>
+
+                    <div id="horariosDisplay" class="horarios-display"></div>
+
+                    <!-- Campos de Nombre y Comentario al final del formulario -->
+                    <div class="input-group">
+                        <input type="text" id="nombreInput" name="nombre" placeholder="Tu nombre" required>
+                    </div>
+
+                    <div class="input-group">
+                        <textarea id="comentarioInput" name="comentario" placeholder="Comentario adicional" required></textarea>
+                    </div>
+
+                    <button type="submit">BUSCAR</button>
+                </form>
+                <div id="resultadosBusqueda"></div>
+            </div>
+        </div>
+
+        <!-- Asistente Virtual con chat con scroll -->
+        <div class="virtual-assistant">
+            <button class="assistant-toggle" onclick="toggleChat()">💬</button>
+            <div class="chat-window" id="chatWindow">
+                <div class="chat-header">
+                    <h3>Asistente Virtual</h3>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Mensajes se agregarán aquí dinámicamente -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" placeholder="Escribe tu pregunta..." id="chatInput">
+                    <button onclick="sendMessage()">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="javascript/ElementoScript.js"></script>
+    <script>
+        async function obtenerInformacion() {
+            const origen = document.getElementById('origenInput').value;
+            const destino = document.getElementById('destinoInput').value;
+
+            if (!origen || !destino) {
+                alert("Por favor ingrese ambas ciudades.");
+                return false;
+            }
+
+            const pregunta = `obtener_informacion(${origen}, ${destino})`;
+
+            try {
+                const response = await fetch('http://localhost:4000/query?pregunta=' + encodeURIComponent(pregunta));
+                const data = await response.json();
+
+                if (data.respuesta) {
+                    document.getElementById('distanceDisplay').textContent = "Distancia y horarios: " + data.respuesta;
+                    document.getElementById('distanciaInput').value = data.respuesta;
+                    return true;
+                } else {
+                    document.getElementById('distanceDisplay').textContent = 'No se encontró información para las ciudades especificadas';
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('distanceDisplay').textContent = 'Error al consultar';
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>
